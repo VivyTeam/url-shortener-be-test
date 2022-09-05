@@ -13,12 +13,14 @@ GET /{shortenedUrl}/full # Returns the full URL given the shortened version
 
 # Your task
 
+- Fork the repository
 - Implement the logic to shorten a URL
 - Implement the logic to get the full URL given a shortened one
 - Bonus: implement a new endpoint that redirects the request to the full version of the shortened URL, like
   ```
   GET /{shortenedUrl} # Redirects the request to the full version of the shortened URL
   ```
+- Share your repository with us
 
 # Ports
 
