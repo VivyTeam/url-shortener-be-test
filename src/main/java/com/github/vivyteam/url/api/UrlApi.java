@@ -25,25 +25,58 @@ public class UrlApi {
     @Autowired
     private ShortUrlService shortService;
 
+    // call example "http://localhost:9000/www.google.com/short"
+    @GetMapping("/{url}/short")
+    public Mono<String> shortUrl(@PathVariable final String url) {
+        // generate id to be used both in fullurl and shorturl documents
+        long generatedId = ThreadLocalRandom.current().nextLong(1000);
 
-    @GetMapping("/fullUrlList")
-    public Flux<FullUrl> getFullUrlList() {
-        return fullService.getFullUrlList();
+        String str = "http://localhost:9000/" + randomUrlGenerator();
+        ShortenedUrl shortUrl = new ShortenedUrl(generatedId, str);
+        Mono<ShortenedUrl> shortMono = Mono.just(shortUrl);
+
+        FullUrl fullUrl = new FullUrl(generatedId, url);
+        Mono<FullUrl> fullMono = Mono.just(fullUrl);
+
+        // save full and short urls to their respected documents
+        shortMono.flatMap(i -> shortService.saveShortUrl(shortMono)).
+                flatMap(i -> fullService.saveFullUrl(fullMono)).subscribe();
+
+        return Mono.just(shortUrl.getUrl());
     }
 
-    @PostMapping("/createFullUrl")
-    public Mono<FullUrl> createFullUrl(@RequestBody Mono<FullUrl> fullUrl) {
-        return fullService.saveFullUrl(fullUrl);
+    // call example "http://localhost:9000/andjfk123/full"
+    @GetMapping("/{shortenedUrl}/full")
+    public Mono<String> getFullUrl(@PathVariable final String shortenedUrl) {
+        String str = "http://localhost:9000/" + shortenedUrl;
+        Long shortUrlId = shortService.findShortByUrl(str);
+        String fullUrl = fullService.findFullById(shortUrlId);
+
+
+        return Mono.just(fullUrl);
     }
 
-    @GetMapping("/shortUrlList")
-    public Flux<ShortenedUrl> getShortenedUrlList() {
-        return shortService.getShortenedUrlList();
-    }
+    // call example "http://localhost:9000/andjfk123"
+    @GetMapping("/{shortenedUrl}")
+    public Mono<Void> redirectToFullUrl(@PathVariable final String shortenedUrl, ServerHttpResponse response, ServerWebExchange exchange) throws URISyntaxException {
+        String str = "http://localhost:9000/" + shortenedUrl;
+        Long shortUrlId = shortService.findShortByUrl(str);
+        String fullUrl = fullService.findFullById(shortUrlId);
 
-    @PostMapping("/createShortUrl")
-    public Mono<ShortenedUrl> createShortenedUrl(@RequestBody Mono<ShortenedUrl> shortUrl) {
-        return shortService.saveShortUrl(shortUrl);
+        URI originalUri = new URI("//" + fullUrl);
+
+        URI mutatedUri = new URI("https",
+                originalUri.getUserInfo(),
+                originalUri.getHost(),
+                originalUri.getPort(),
+                originalUri.getPath(),
+                originalUri.getQuery(),
+                originalUri.getFragment());
+
+        response = exchange.getResponse();
+        response.setStatusCode(HttpStatus.MOVED_PERMANENTLY);
+        response.getHeaders().setLocation(mutatedUri);
+        return response.setComplete();
     }
 
     private String randomUrlGenerator() {
@@ -71,56 +104,24 @@ public class UrlApi {
     }
 
 
-    @GetMapping("/{url}/short")
-    public Mono<String> shortUrl(@PathVariable final String url) {
-        // generate id to be used both in fullurl and short url documents
-        long generatedId = ThreadLocalRandom.current().nextLong(100);
-
-        String str = "http://localhost:9000/" + randomUrlGenerator();
-        ShortenedUrl shortUrl = new ShortenedUrl(generatedId, str);
-        Mono<ShortenedUrl> shortMono = Mono.just(shortUrl);
-
-        FullUrl fullUrl = new FullUrl(generatedId, url);
-        Mono<FullUrl> fullMono = Mono.just(fullUrl);
-
-        // save full and short urls to their respected documents
-        shortMono.flatMap(i -> shortService.saveShortUrl(shortMono)).
-                flatMap(i -> fullService.saveFullUrl(fullMono)).subscribe();
-
-        return Mono.just(shortUrl.getUrl());
+    @GetMapping("/fullUrlList")
+    public Flux<FullUrl> getFullUrlList() {
+        return fullService.getFullUrlList();
     }
 
-    @GetMapping("/{shortenedUrl}/full")
-    public Mono<String> getFullUrl(@PathVariable final String shortenedUrl) {
-        // TODO: implement logic to fetch the full url
-        String str = "http://localhost:9000/" + shortenedUrl;
-        Long shortUrlId = shortService.findShortByUrl(str);
-        String fullUrl = fullService.findFullById(shortUrlId);
-
-
-        return Mono.just(fullUrl);
+    @PostMapping("/createFullUrl")
+    public Mono<FullUrl> createFullUrl(@RequestBody Mono<FullUrl> fullUrl) {
+        return fullService.saveFullUrl(fullUrl);
     }
 
-    @GetMapping("/{shortenedUrl}")
-    public Mono<Void> redirectToFullUrl(@PathVariable final String shortenedUrl, ServerHttpResponse response, ServerWebExchange exchange) throws URISyntaxException {
-        String str = "http://localhost:9000/" + shortenedUrl;
-        Long shortUrlId = shortService.findShortByUrl(str);
-        String fullUrl = fullService.findFullById(shortUrlId);
+    @GetMapping("/shortUrlList")
+    public Flux<ShortenedUrl> getShortenedUrlList() {
+        return shortService.getShortenedUrlList();
+    }
 
-        URI originalUri = new URI("//"+ fullUrl);
-
-        URI mutatedUri = new URI("https",
-                originalUri.getUserInfo(),
-                originalUri.getHost(),
-                originalUri.getPort(),
-                originalUri.getPath(),
-                originalUri.getQuery(),
-                originalUri.getFragment());
-
-        response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.MOVED_PERMANENTLY);
-        response.getHeaders().setLocation(mutatedUri);
-        return response.setComplete();
+    @PostMapping("/createShortUrl")
+    public Mono<ShortenedUrl> createShortenedUrl(@RequestBody Mono<ShortenedUrl> shortUrl) {
+        return shortService.saveShortUrl(shortUrl);
     }
 
 }
