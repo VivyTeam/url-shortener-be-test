@@ -12,7 +12,7 @@ public class ShortenedUrl {
     @Id
     private long id;
     private String url;
-
+w
     public ShortenedUrl() {
     }
 
