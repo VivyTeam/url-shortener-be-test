@@ -1,2 +1,9 @@
 server:
   port: 9000
+
+spring:
+  data:
+    mongodb:
+      database: url
+      host: localhost
+      port: 27017
