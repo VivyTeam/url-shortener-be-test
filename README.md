@@ -27,6 +27,7 @@ The application must have three endpoints:
 - code must be written using Spring Webflux with Reactor
 - any JVM language can be chosen
 - write all kinds of tests you judge necessary
+- project must be production-ready
 
 ## Important things you should consider when designing your service
 
