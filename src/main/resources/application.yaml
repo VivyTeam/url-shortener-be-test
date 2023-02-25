@@ -1,2 +1,13 @@
 server:
   port: 9000
+
+spring:
+  redis:
+    host: localhost
+    port: 6379
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env,beans,metrics
